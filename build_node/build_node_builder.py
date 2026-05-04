@@ -43,6 +43,7 @@ class BuildNodeBuilder(BaseSlaveBuilder):
         terminated_event,
         graceful_terminated_event,
         task_queue: Queue,
+        numa_cpus=None,
     ):
         """
         Build thread initialization.
@@ -59,9 +60,13 @@ class BuildNodeBuilder(BaseSlaveBuilder):
             Shows, if process got "kill -10" signal.
         task_queue: queue.Queue
             Shared queue with build tasks
+        numa_cpus : list of int, optional
+            CPU identifiers the thread (and the mock processes it spawns)
+            must be pinned to so that a build stays on a single NUMA node.
         """
         super().__init__(
             thread_num=thread_num,
+            numa_cpus=numa_cpus,
         )
         self.__config = config
         # current task processing start timestamp
@@ -93,6 +98,7 @@ class BuildNodeBuilder(BaseSlaveBuilder):
         self.__task_queue = task_queue
 
     def run(self):
+        self.apply_numa_affinity()
         log_file = os.path.join(
             self.__working_dir, 'bt-{0}.log'.format(self.name)
         )
