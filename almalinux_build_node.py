@@ -177,15 +177,20 @@ def main(sys_args):
     )
 
     for thread_num in range(0, config.threads_count):
+        numa_node_id, numa_cpus = numa_assignments[thread_num]
         builder = BuildNodeBuilder(
             config,
             thread_num,
             node_terminated,
             node_graceful_terminated,
             task_queue,
-            numa_cpus=numa_assignments[thread_num],
+            numa_cpus=numa_cpus,
+            numa_node_id=numa_node_id,
         )
         builders.append(builder)
+    for builder in builders:
+        builder.set_siblings(builders)
+    for builder in builders:
         builder.start()
 
     builder_supervisor = BuilderSupervisor(
